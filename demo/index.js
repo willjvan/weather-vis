@@ -135,7 +135,6 @@ function setup() {
 
 function draw(matrix) {
     if (counter % 3 == 0) {
-        console.log("drawing");
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         currentImage = currentImage.next;
         waveTexture = createTexture(gl.LINEAR, currentImage.element);
