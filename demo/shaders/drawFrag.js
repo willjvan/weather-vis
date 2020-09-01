@@ -18,6 +18,6 @@ var drawWaveFragSource = `
 
     void main() {
         vec4 color = texture2D_bilinear(u_wave, v_texCoord, u_resolution, (1.0/u_resolution));
-        gl_FragColor = vec4(color.r/1.8, color.r/1.1, color.r/1.5, 1.0);
+        gl_FragColor = vec4(color.r, color.r, color.r/1.5, 1.0);
     }
 `;
