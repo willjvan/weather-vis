@@ -13,12 +13,37 @@ function arrayToObject(arr) {
     return result;
 }
 
+function hslToRgb(h, s, l){
+    var r, g, b;
+
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        var hue2rgb = function hue2rgb(p, q, t){
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
 function createOzonePNG(fileName) {
-    var ozone = JSON.parse(fs.readFileSync("./data/jsonData/" + uFileName + ".json"));
+    var ozone = JSON.parse(fs.readFileSync("../demo/data/jsonData/" + fileName + ".json"));
     var ozone_data = arrayToObject(ozone.messages[0]);
     var ozone_values = ozone_data.values; 
 
-    var windPNG = new PNG({
+    var ozonePNG = new PNG({
         colorType:2,
         filterType:4,
         width: width,
@@ -29,20 +54,25 @@ function createOzonePNG(fileName) {
         for (var x = 0; x < width; x++) {  
             var dataIndex = (y * width + x) * 4; 
             var ozoneIndex = y * width + ((width - 1 - x) + width / 2) % width; 
-            var offset = windPNG.data.length - dataIndex
+            var offset = ozonePNG.data.length - dataIndex
 
             var min = ozone_data.minimum;
             var max = ozone_data.maximum;
             var cur = ozone_values[ozoneIndex];
-            
-            ozonePNG.data[offset + 0] = 
-            ozonePNG.data[offset + 1] = 
-            ozonePNG.data[offset + 2] = 0;   
+            var mappedHue = (cur - min)/(max - min); // values are between 0 and 1
+            var index = Math.round(mappedHue * 9);
+            var hslValues = [0, 20, 40, 60, 80, 100, 120, 140, 180, 200]
+            var rgb = hslToRgb(hslValues[index]/360, 1, .6);
+
+            ozonePNG.data[offset + 0] = rgb[0];
+            ozonePNG.data[offset + 1] = rgb[1];
+            ozonePNG.data[offset + 2] = rgb[2];   
+
             ozonePNG.data[offset + 3] = 255; 
         }
     }
 
-    windPNG.pack().pipe(fs.createWriteStream("./data/imageData/" + outFileName + ".png"));
+    ozonePNG.pack().pipe(fs.createWriteStream("../demo/data/imageData/" + fileName + ".png"));
 }
 
 function createWindPNG(uFileName, vFileName, outFileName) {
@@ -120,6 +150,7 @@ function createWavePNG(fileName) {
 for (var i = 1; i < 9; i++) {
     for (const t of times) {
         createWindPNG("u_wind_" + i + "_" + t, "v_wind_" + i + "_" + t, "wind_" + i + "_" + t);
+        createOzonePNG("ozone_" + i + "_" + t);
     }
 }
 

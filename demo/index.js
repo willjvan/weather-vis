@@ -6,7 +6,8 @@ var currentImage;
 var drawProgram;
 var width;
 var height;
-var counter;
+var lastTime;
+var currentTime;
 
 class Node {
     constructor(element, next) {
@@ -46,7 +47,7 @@ class LinkedList {
 }
 
 window.onload = function() {
-    counter = 0;
+    lastTime = performance.now();
     canvas = document.getElementById('weatherAnim'); 
     width = 360;
     height = 181;
@@ -133,19 +134,21 @@ function setup() {
     setupWave();
 }
 
-function draw(matrix) {
-    if (counter % 3 == 0) {
+function draw() {
+    currentTime = performance.now();
+    var timeDiff = (currentTime - lastTime)/1000; // ms
+    if (timeDiff > .05) {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         currentImage = currentImage.next;
         waveTexture = createTexture(gl.LINEAR, currentImage.element);
         activateTexture(waveTexture, 0);
-        drawWave(matrix);
+        drawWave();
+        lastTime = performance.now();
     }
-    counter += 0.5;
     window.requestAnimationFrame(draw);
 }
 
-function drawWave(matrix) {
+function drawWave() {
     gl.useProgram(drawProgram);
     bindAttribute(positionBuffer, gl.getAttribLocation(drawProgram, "a_position"), 2);
     bindAttribute(textureBuffer, gl.getAttribLocation(drawProgram, "a_texCoord"), 2);
