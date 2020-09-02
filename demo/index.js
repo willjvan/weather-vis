@@ -137,7 +137,7 @@ function setup() {
 function draw() {
     currentTime = performance.now();
     var timeDiff = (currentTime - lastTime)/1000; // ms
-    if (timeDiff > .05) {
+    if (timeDiff > .1) {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         currentImage = currentImage.next;
         waveTexture = createTexture(gl.LINEAR, currentImage.element);
