@@ -2,7 +2,9 @@ var drawWaveFragSource = `
     precision mediump float;
 
     uniform vec2 u_resolution;
-    uniform sampler2D u_wave;
+    uniform sampler2D u_wind;
+    uniform sampler2D u_map;
+
     varying vec2 v_texCoord;
 
     vec4 texture2D_bilinear(sampler2D t, vec2 uv, vec2 textureSize, vec2 texelSize) {
@@ -17,7 +19,8 @@ var drawWaveFragSource = `
     }
 
     void main() {
-        vec4 color = texture2D_bilinear(u_wave, v_texCoord, u_resolution, (1.0/u_resolution));
+        vec4 color = texture2D_bilinear(u_wind, v_texCoord, u_resolution, (1.0/u_resolution));
+        vec4 map = texture2D_bilinear(u_map, v_texCoord, u_resolution, (1.0/u_resolution));
         gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
     }
 `;

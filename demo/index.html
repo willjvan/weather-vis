@@ -4,7 +4,8 @@
     <link rel = "stylesheet" href= "index.css">
     </head>
     <body class = "fill-window">
-        <canvas id = "weatherAnim"></canvas>
+        <canvas id = "weatherVis" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+        <canvas id = "unitVis" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
         <img src = "./data/imageData/ozone_1_t00.png" id = "windImage4" style = "display: none" ></script> 
         <img src = "./data/imageData/ozone_1_t06.png" id = "windImage3" style = "display: none" ></script> 
         <img src = "./data/imageData/ozone_1_t12.png" id = "windImage2" style = "display: none" ></script> 
@@ -33,8 +34,11 @@
         <img src = "./data/imageData/ozone_7_t06.png" id = "windImage27" style = "display: none" ></script> 
         <img src = "./data/imageData/ozone_7_t12.png" id = "windImage26" style = "display: none" ></script> 
         <img src = "./data/imageData/ozone_7_t18.png" id = "windImage25" style = "display: none" ></script> 
+        <img src = "./data/imageData/worldMap.png" id = "worldMap" style = "display: none" ></script> 
+
         <script src = "./shaders/drawVert.js"></script>
         <script src = "./shaders/drawFrag.js"></script>
         <script src = "./index.js"></script>
+        <script src = "./util.js"></script>
     </body>
 </html> 

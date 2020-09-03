@@ -4,7 +4,8 @@ var drawWaveVertSource = `
     attribute vec2 a_position;
     attribute vec2 a_texCoord;
 
-    uniform sampler2D u_wave;
+    uniform sampler2D u_wind;
+    uniform sampler2D u_map;
     uniform mat4 u_matrix;
     uniform vec2 u_resolution;
 
