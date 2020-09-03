@@ -147,7 +147,8 @@ function draw() {
     drawUnits();    
     currentTime = performance.now();
     var timeDiff = (currentTime - lastTime)/1000; // ms
-    if (timeDiff > .05) {
+
+    if (timeDiff > .1) {
         if (unit == 28) {
             unit = 1;
         }
