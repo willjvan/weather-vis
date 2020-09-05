@@ -82,11 +82,11 @@ function createOznUnit(fileName) {
         height: 10,
     });
 
-    sectionWidth = 
+    //sectionWidth = 
 
-    for (var i = 0; i < width; i+=width/oznHues.length) {
-        for 
-    }
+    // for (var i = 0; i < width; i+=width/oznHues.length) {
+    //     for 
+    // }
 }
 
 function createWindPNG(uFileName, vFileName, outFileName) {

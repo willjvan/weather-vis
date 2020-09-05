@@ -1,9 +1,8 @@
-import * as util from './util';
-
 // webgl variables
 var positionBuffer;
 var textureBuffer;
-var images;
+var images =[];
+var textures = [];
 var map;
 var mapTexture;
 var drawProgram;
@@ -31,10 +30,8 @@ window.onload = function() {
     height = 181;
     pct = .8;
 
-
+    loadImages(setupAnimation, window.requestAnimationFrame);
     setupCanvas();
-    setupAnimation();
-    window.requestAnimationFrame(draw);
 }
 
 window.onresize = function() {
@@ -49,6 +46,25 @@ window.onresize = function() {
     ];
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
+}
+
+async function loadImages(setup, requestFrame) {
+    const promiseArray = [];
+    const times = ["t00", "t06", "t12", "t18"];
+
+    for (var i = 1; i < 8; i++) {
+        for (var t = 3; t >=0; t--) {
+            promiseArray.push(new Promise((resolve) => {
+                const img = new Image();
+                img.onload = resolve;
+                img.src = "./data/imageData/ozone_" + i + "_" + times[t] + ".png";
+                images.push(img);
+            }));
+        }
+    }
+    await Promise.all(promiseArray);
+    setup();
+    requestFrame(draw);
 }
 
 function drawUnits() {
@@ -122,25 +138,24 @@ function setupBuffers() {
         1.0,  0.0,
         0.0,  0.0,
     ];
-    positionBuffer = util.createBuffer(posData);
-    textureBuffer = util.createBuffer(textureData);
+    positionBuffer = createBuffer(posData);
+    textureBuffer = createBuffer(textureData);
 }
 
 function setupTextures() {
     map = document.getElementById("worldMap");
-    images = [];
     for (var i = 1; i < 29; i++) {
-        images[i] = util.createTexture(gl.LINEAR, document.getElementById("windImage" + i));
+        textures[i] = createTexture(gl.LINEAR, images[i-1]);
     }
     for (var i = 1; i < 29; i++) {
-        util.activateTexture(images[i], i);
+        activateTexture(textures[i], i);
     }
-    mapTexture = util.createTexture(gl.LINEAR, map);
-    util.activateTexture(mapTexture, 0);
+    mapTexture = createTexture(gl.LINEAR, map);
+    activateTexture(mapTexture, 0);
 }
 
 function setupAnimation() {
-    drawProgram = util.createProgram(drawWaveVertSource, drawWaveFragSource);
+    drawProgram = createProgram(drawWaveVertSource, drawWaveFragSource);
     setupBuffers();
     setupTextures();
 }
@@ -164,8 +179,8 @@ function draw() {
 
 function drawTexture() {
     gl.useProgram(drawProgram);
-    util.bindAttribute(positionBuffer, gl.getAttribLocation(drawProgram, "a_position"), 2);
-    util.bindAttribute(textureBuffer, gl.getAttribLocation(drawProgram, "a_texCoord"), 2);
+    bindAttribute(positionBuffer, gl.getAttribLocation(drawProgram, "a_position"), 2);
+    bindAttribute(textureBuffer, gl.getAttribLocation(drawProgram, "a_texCoord"), 2);
     gl.uniform1i(gl.getUniformLocation(drawProgram, "u_wind"), unit);
     gl.uniform1i(gl.getUniformLocation(drawProgram, "u_map"), 0);
     gl.uniform2f(gl.getUniformLocation(drawProgram, "u_resolution"), gl.canvas.width, gl.canvas.height);
