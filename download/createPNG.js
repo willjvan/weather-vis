@@ -4,6 +4,7 @@ const fs = require('fs');
 var width = 1440;
 var height = 721;
 var times = ["t00", "t06", "t12", "t18"];
+var oznHues = [0, 20, 40, 60, 80, 100, 120, 140, 180, 200]
 
 function arrayToObject(arr) {
     var result = {};
@@ -38,7 +39,7 @@ function hslToRgb(h, s, l){
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-function createOzonePNG(fileName) {
+function createOzn(fileName) {
     var ozone = JSON.parse(fs.readFileSync("../demo/data/jsonData/" + fileName + ".json"));
     var ozone_data = arrayToObject(ozone.messages[0]);
     var ozone_values = ozone_data.values; 
@@ -61,18 +62,31 @@ function createOzonePNG(fileName) {
             var cur = ozone_values[ozoneIndex];
             var mappedHue = (cur - min)/(max - min); // values are between 0 and 1
             var index = Math.round(mappedHue * 9);
-            var hslValues = [0, 20, 40, 60, 80, 100, 120, 140, 180, 200]
-            var rgb = hslToRgb(hslValues[index]/360, 1, .6);
+            var rgb = hslToRgb(oznHues[index]/360, 1, .6);
 
             ozonePNG.data[offset + 0] = rgb[0];
             ozonePNG.data[offset + 1] = rgb[1];
             ozonePNG.data[offset + 2] = rgb[2];   
-
             ozonePNG.data[offset + 3] = 255; 
         }
     }
 
     ozonePNG.pack().pipe(fs.createWriteStream("../demo/data/imageData/" + fileName + ".png"));
+}
+
+function createOznUnit(fileName) {
+    var ozonePNG = new PNG({
+        colorType:2,
+        filterType:4,
+        width: width,
+        height: 10,
+    });
+
+    sectionWidth = 
+
+    for (var i = 0; i < width; i+=width/oznHues.length) {
+        for 
+    }
 }
 
 function createWindPNG(uFileName, vFileName, outFileName) {
@@ -150,7 +164,9 @@ function createWavePNG(fileName) {
 for (var i = 1; i < 9; i++) {
     for (const t of times) {
         createWindPNG("u_wind_" + i + "_" + t, "v_wind_" + i + "_" + t, "wind_" + i + "_" + t);
-        createOzonePNG("ozone_" + i + "_" + t);
+        createOzn("ozone_" + i + "_" + t);
     }
 }
+
+createOznUnit("ozone_unit");
 

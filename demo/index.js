@@ -1,3 +1,5 @@
+import * as util from './util';
+
 // webgl variables
 var positionBuffer;
 var textureBuffer;
@@ -120,25 +122,25 @@ function setupBuffers() {
         1.0,  0.0,
         0.0,  0.0,
     ];
-    positionBuffer = createBuffer(posData);
-    textureBuffer = createBuffer(textureData);
+    positionBuffer = util.createBuffer(posData);
+    textureBuffer = util.createBuffer(textureData);
 }
 
 function setupTextures() {
     map = document.getElementById("worldMap");
     images = [];
     for (var i = 1; i < 29; i++) {
-        images[i] = createTexture(gl.LINEAR, document.getElementById("windImage" + i));
+        images[i] = util.createTexture(gl.LINEAR, document.getElementById("windImage" + i));
     }
     for (var i = 1; i < 29; i++) {
-        activateTexture(images[i], i);
+        util.activateTexture(images[i], i);
     }
-    mapTexture = createTexture(gl.LINEAR, map);
-    activateTexture(mapTexture, 0);
+    mapTexture = util.createTexture(gl.LINEAR, map);
+    util.activateTexture(mapTexture, 0);
 }
 
 function setupAnimation() {
-    drawProgram = createProgram(drawWaveVertSource, drawWaveFragSource);
+    drawProgram = util.createProgram(drawWaveVertSource, drawWaveFragSource);
     setupBuffers();
     setupTextures();
 }
@@ -162,8 +164,8 @@ function draw() {
 
 function drawTexture() {
     gl.useProgram(drawProgram);
-    bindAttribute(positionBuffer, gl.getAttribLocation(drawProgram, "a_position"), 2);
-    bindAttribute(textureBuffer, gl.getAttribLocation(drawProgram, "a_texCoord"), 2);
+    util.bindAttribute(positionBuffer, gl.getAttribLocation(drawProgram, "a_position"), 2);
+    util.bindAttribute(textureBuffer, gl.getAttribLocation(drawProgram, "a_texCoord"), 2);
     gl.uniform1i(gl.getUniformLocation(drawProgram, "u_wind"), unit);
     gl.uniform1i(gl.getUniformLocation(drawProgram, "u_map"), 0);
     gl.uniform2f(gl.getUniformLocation(drawProgram, "u_resolution"), gl.canvas.width, gl.canvas.height);
