@@ -1,4 +1,4 @@
-var drawWaveFragSource = `
+var drawVisFragSource = `
     precision mediump float;
 
     uniform vec2 u_resolution;

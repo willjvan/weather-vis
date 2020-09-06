@@ -1,4 +1,4 @@
-var drawWaveVertSource = `
+var drawVisVertSource = `
     precision mediump float;
 
     attribute vec2 a_position;

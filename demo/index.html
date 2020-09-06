@@ -5,10 +5,14 @@
     </head>
     <body class = "fill-window">
         <canvas id = "weatherVis" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
-        <canvas id = "unitVis" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas> 
+        <canvas id = "coorVis" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas> 
+        <canvas id = "unitVis" style="position: absolute; left: 0; top: 0; z-index: 2;"></canvas> 
+
         <img src = "./data/imageData/worldMap.png" id = "worldMap" style = "display: none" ></script> 
-        <script src = "./shaders/drawVert.js"></script>
-        <script src = "./shaders/drawFrag.js"></script>
+        <script src = "./shaders/drawVisVert.js"></script>
+        <script src = "./shaders/drawVisFrag.js"></script>
+        <script src = "./shaders/drawUnitVert.js"></script>
+        <script src = "./shaders/drawUnitFrag.js"></script>
         <script src = "./index.js"></script>
         <script src = "./util.js"></script>
     </body>

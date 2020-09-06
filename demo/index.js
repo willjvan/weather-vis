@@ -1,102 +1,187 @@
-// webgl variables
-var positionBuffer;
-var textureBuffer;
-var images =[];
-var textures = [];
-var map;
-var mapTexture;
-var drawProgram;
-var unit;
-
-// canvas variables
-var width;
-var height;
-var pct;
-
-// animation variables
+var width = 360;
+var height = 181;
+var canvasPct = .8;
 var lastTime;
 var currentTime;
+var tUnit = 1;
 
+// variables related to weather visualization
+vis = {
+    canvas: document.getElementById('weatherVis'),
+    program: null,
+    posBuffer: null,
+    texBuffer: null,
+    images: [],
+    textures: [],
+    x: null,
+    y: null,
+    pct: 0.9,
+    width: null,
+    height: null,
+}
+
+// variables related to unit/colour graphics 
+unit = {
+    program: null,
+    x: null,
+    y: null,
+    width: null,
+    height: null,
+}
+
+// all variables related to coordinate graphics
+coord = {
+    canvas: document.getElementById('unitVis'),
+    context: null,
+    width: null,
+    height: null,
+}
 
 window.onload = function() {
-    weatherCanvas = document.getElementById('weatherVis'); 
-    unitCanvas = document.getElementById('unitVis');
-    context = unitCanvas.getContext('2d');
-    gl = weatherCanvas.getContext('webgl');
-
-    unit = 1;
+    context = coord.canvas.getContext('2d');
+    context.strokeStyle = "#303030";
+    context.font = "10px Arial";
+    gl = vis.canvas.getContext('webgl');
     lastTime = performance.now();
-    width = 360;
-    height = 181;
-    pct = .8;
-
-    loadImages(setupAnimation, window.requestAnimationFrame);
-    setupCanvas();
+    loadImages(init, window.requestAnimationFrame);
+    format();
 }
 
 window.onresize = function() {
-    setupCanvas();
-    var posData = [
-        0, 0,
-        width, height,
-        width, 0,
-        0, 0,
-        width, height,
-        0, height,
-    ];
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posData), gl.STATIC_DRAW);
+    format();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vis.posBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        0, 0, width, height, width, 0,
+        0, 0, width, height, 0, height,
+    ]), gl.STATIC_DRAW);
 }
 
-async function loadImages(setup, requestFrame) {
+async function loadImages(init, requestFrame) {
     const promiseArray = [];
     const times = ["t00", "t06", "t12", "t18"];
-
     for (var i = 1; i < 8; i++) {
-        for (var t = 3; t >=0; t--) {
+        for (var t = 3; t >= 0; t--) {
             promiseArray.push(new Promise((resolve) => {
                 const img = new Image();
                 img.onload = resolve;
                 img.src = "./data/imageData/ozone_" + i + "_" + times[t] + ".png";
-                images.push(img);
+                vis.images.push(img);
             }));
         }
     }
     await Promise.all(promiseArray);
-    setup();
+    init();
     requestFrame(draw);
 }
 
-function drawUnits() {
-    context.clearRect(0, 0, unitCanvas.width, unitCanvas.height);
+function format() {
+    var newWidth = canvasPct * window.innerWidth;
+    var scale = newWidth / width;
+    var newHeight = height * scale;
 
-    var space = 10;
-    var xOff = (unitCanvas.width - weatherCanvas.width)/2; // top left corner of
-    var yOff = (unitCanvas.height - weatherCanvas.height)/2; // the webgl frame
+    vis.canvas.width = width = newWidth;
+    vis.canvas.height = height = newHeight;
+    vis.width = width * vis.pct;
+    vis.height = height * vis.pct;
+    vis.x = width*(1 - vis.pct)/2
+    vis.y = height*(1 - vis.pct)/2;
 
-    var lat = ["90N", "60N", "30N", "EQ", "30S", "60S", "90S"];
-    var lon = ["0", "60E", "120E", "180", "120W", "60W","0"];
-    
+    coord.width = coord.canvas.width = window.innerWidth;
+    coord.height = coord.canvas.height = height + 100;
+
+    unit.width = vis.width;
+    unit.height = vis.height * .1;
+    unit.x = vis.x;
+    unit.y = height - vis.y + 5;
+}
+
+function init() {
+    vis.program = createProgram(drawVisVertSource, drawVisFragSource);
+    unit.program  = createProgram(drawUnitVertSource, drawUnitFragSource);
+    initBuffers();
+    initTextures();
+}
+
+function initBuffers() {
+    var posData = [
+        0, 0, width, height, width, 0,
+        0, 0, width, height, 0, height,
+    ];
+    var textureData = [
+        0.0,  1.0, 1.0,  0.0, 1.0,  1.0,
+        0.0,  1.0, 1.0,  0.0, 0.0,  0.0,
+    ];
+    vis.posBuffer = createBuffer(posData);
+    vis.texBuffer = createBuffer(textureData);
+}
+
+function initTextures() {
+    // map = document.getElementById("worldMap");
+    for (var i = 1; i < 29; i++) {
+        vis.textures[i] = createTexture(gl.LINEAR, vis.images[i-1]);
+    }
+    for (var i = 1; i < 29; i++) {
+        activateTexture(vis.textures[i], i);
+    }
+    // mapTexture = createTexture(gl.LINEAR, map);
+    // activateTexture(mapTexture, 0);
+}
+
+function draw() {
+    drawCoord();    
+    currentTime = performance.now();
+    var timeDiff = (currentTime - lastTime)/1000; // seconds
+    if (timeDiff > .15) {
+        if (tUnit == 28) tUnit = 1;
+        gl.viewport(vis.x, vis.y, vis.width, vis.height);
+        drawTexture();
+        gl.viewport(unit.x, unit.y, unit.width, unit.height);
+        drawUnit();
+        lastTime = performance.now();
+        tUnit++;
+    }
+    window.requestAnimationFrame(draw);
+}
+
+function drawTexture() {
+    gl.useProgram(vis.program);
+    bindAttribute(vis.posBuffer, gl.getAttribLocation(vis.program, "a_position"), 2);
+    bindAttribute(vis.texBuffer, gl.getAttribLocation(vis.program, "a_texCoord"), 2);
+    gl.uniform1i(gl.getUniformLocation(vis.program, "u_wind"), tUnit);
+    gl.uniform1i(gl.getUniformLocation(vis.program, "u_map"), 0);
+    gl.uniform2f(gl.getUniformLocation(vis.program, "u_resolution"), gl.canvas.width, gl.canvas.height);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+function drawCoord() {
+    context.clearRect(0, 0, coord.canvas.width, coord.canvas.height);
+    const space = 10;
+    const xOff = (coord.width - vis.width)/2; // top left corner of
+    const yOff = (coord.height - vis.height)/2; // the webgl frame
+    const lat = ["90N", "60N", "30N", "EQ", "30S", "60S", "90S"];
+    const lon = ["0", "60E", "120E", "180", "120W", "60W","0"];
+
     var index = 0;
     context.textAlign = "right";
-    for (var i = yOff; i <= yOff + weatherCanvas.height; i += weatherCanvas.height/6) {
-        var a = { x: xOff + 3 - space, y: i }
-        var b = { x: xOff + 5 - space, y: i }
-        var t = { x: xOff-space, y: i + 2 }
+    for (var i = yOff; i <= yOff + vis.height; i += vis.height/6) {
+        const a = { x: xOff + 3 - space, y: i }
+        const b = { x: xOff + 5 - space, y: i }
+        const t = { x: xOff-space, y: i + 2 }
         context.beginPath(); 
         context.moveTo(a.x, a.y);
         context.lineTo(b.x, b.y);
         context.stroke();
         context.fillText(lat[index], t.x, t.y);
-        index ++;
+        index++;
     }
-
     index = 0;
     context.textAlign = "center";
-    for (var i = xOff; i <= xOff + weatherCanvas.width; i += weatherCanvas.width/6) {
-        var a = { x: i, y: yOff + weatherCanvas.height+3}
-        var b = { x: i, y: yOff + weatherCanvas.height+5}
-        var t = { x: i, y: yOff + weatherCanvas.height + space*1.5}
+    for (var i = xOff; i <= xOff + vis.width; i += vis.width/6) {
+        var a = { x: i, y: yOff + vis.height+3}
+        var b = { x: i, y: yOff + vis.height+5}
+        var t = { x: i, y: yOff + vis.height + space*1.5}
         context.beginPath(); 
         context.moveTo(a.x, a.y);
         context.lineTo(b.x, b.y);
@@ -106,84 +191,10 @@ function drawUnits() {
     }
 }
 
-function setupCanvas() {
-    var newWidth = pct * window.innerWidth;
-    var scale = newWidth / width;
-    var newHeight = height * scale;
-    width = newWidth;
-    height = newHeight;
-    weatherCanvas.width = width;
-    weatherCanvas.height = height;
-    unitCanvas.width = window.innerWidth;
-    unitCanvas.height = height + 100;
-    context.strokeStyle = "#303030";
-    context.font = "10px Arial";
-}
-
-function setupBuffers() {
-    var posData = [
-        0, 0,
-        width, height,
-        width, 0,
-        0, 0,
-        width, height,
-        0, height,
-    ];
-    var textureData = [
-        0.0,  1.0,
-        1.0,  0.0,
-        1.0,  1.0,
-        
-        0.0,  1.0,
-        1.0,  0.0,
-        0.0,  0.0,
-    ];
-    positionBuffer = createBuffer(posData);
-    textureBuffer = createBuffer(textureData);
-}
-
-function setupTextures() {
-    map = document.getElementById("worldMap");
-    for (var i = 1; i < 29; i++) {
-        textures[i] = createTexture(gl.LINEAR, images[i-1]);
-    }
-    for (var i = 1; i < 29; i++) {
-        activateTexture(textures[i], i);
-    }
-    mapTexture = createTexture(gl.LINEAR, map);
-    activateTexture(mapTexture, 0);
-}
-
-function setupAnimation() {
-    drawProgram = createProgram(drawWaveVertSource, drawWaveFragSource);
-    setupBuffers();
-    setupTextures();
-}
-
-function draw() {
-    drawUnits();    
-    currentTime = performance.now();
-    var timeDiff = (currentTime - lastTime)/1000; // ms
-
-    if (timeDiff > .1) {
-        if (unit == 28) {
-            unit = 1;
-        }
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        drawTexture();
-        lastTime = performance.now();
-        unit++;
-    }
-    window.requestAnimationFrame(draw);
-}
-
-function drawTexture() {
-    gl.useProgram(drawProgram);
-    bindAttribute(positionBuffer, gl.getAttribLocation(drawProgram, "a_position"), 2);
-    bindAttribute(textureBuffer, gl.getAttribLocation(drawProgram, "a_texCoord"), 2);
-    gl.uniform1i(gl.getUniformLocation(drawProgram, "u_wind"), unit);
-    gl.uniform1i(gl.getUniformLocation(drawProgram, "u_map"), 0);
-    gl.uniform2f(gl.getUniformLocation(drawProgram, "u_resolution"), gl.canvas.width, gl.canvas.height);
+function drawUnit() {
+    gl.useProgram(unit.program);
+    bindAttribute(vis.posBuffer, gl.getAttribLocation(unit.program, "a_position"), 2);
+    gl.uniform2f(gl.getUniformLocation(unit.program, "u_resolution"), gl.canvas.width, gl.canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
