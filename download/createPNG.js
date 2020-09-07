@@ -56,7 +56,7 @@ function createOzn(fileName) {
             var ozoneIndex = y * width + ((width - 1 - x) + width / 2) % width; 
             var offset = ozonePNG.data.length - dataIndex
 
-            var min = 150;
+            var min = 170;
             var max = 500;
             var cur = ozone_values[ozoneIndex];
             var mappedHue = (cur - min)/(max - min); // values are between 0 and 1

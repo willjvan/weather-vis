@@ -1,12 +1,12 @@
 var width = 360;
 var height = 181;
-var canvasPct = .8;
+var canvasPct = .75;
 var lastTime;
 var currentTime;
-var tUnit = 1;
+var tUnit = 27;
 
 // variables related to weather visualization
-vis = {
+var vis = {
     canvas: document.getElementById('weatherVis'),
     program: null,
     posBuffer: null,
@@ -15,13 +15,13 @@ vis = {
     textures: [],
     x: null,
     y: null,
-    pct: 0.9,
+    pct: 0.8,
     width: null,
     height: null,
 }
 
-// variables related to unit/colour graphics 
-unit = {
+// variables related to dobson unit graphics 
+var dob = {
     program: null,
     x: null,
     y: null,
@@ -31,7 +31,7 @@ unit = {
 }
 
 // all variables related to coordinate graphics
-coord = {
+var info = {
     canvas: document.getElementById('unitVis'),
     context: null,
     width: null,
@@ -39,12 +39,12 @@ coord = {
 }
 
 window.onload = function() {
-    context = coord.canvas.getContext('2d');
+    context = info.canvas.getContext('2d');
     context.strokeStyle = "#303030";
-    context.font = "10px Arial";
+    context.font = "10px Courier New";
     gl = vis.canvas.getContext('webgl');
     lastTime = performance.now();
-    loadJson(unit, "./data/jsonData/ozone_unit.json");
+    loadJson(dob, "./data/jsonData/ozone_unit.json");
     loadImages(init, window.requestAnimationFrame);
     format();
 }
@@ -88,18 +88,18 @@ function format() {
     vis.x = width*(1 - vis.pct)/2
     vis.y = height*(1 - vis.pct)/2;
 
-    coord.width = coord.canvas.width = window.innerWidth;
-    coord.height = coord.canvas.height = height + 100;
+    info.width = info.canvas.width = window.innerWidth;
+    info.height = info.canvas.height = height + 100;
 
-    unit.width = vis.width;
-    unit.height = vis.height * .1;
-    unit.x = vis.x;
-    unit.y = height - vis.y + 5;
+    dob.width = vis.width;
+    dob.height = (vis.height) * .025;
+    dob.x = vis.x;
+    dob.y = vis.y + vis.height*1.015;
 }
 
 function init() {
     vis.program = createProgram(drawVisVertSource, drawVisFragSource);
-    unit.program  = createProgram(drawUnitVertSource, drawUnitFragSource);
+    dob.program  = createProgram(drawUnitVertSource, drawUnitFragSource);
     initBuffers();
     initTextures();
 }
@@ -130,17 +130,21 @@ function initTextures() {
 }
 
 function draw() {
+    context.clearRect(0, 0, info.canvas.width, info.canvas.height);
+    context.font = Math.round(info.height * .02) + "px Courier New";
     drawCoord();    
+    drawDobson();
+    drawTitle();
     currentTime = performance.now();
     var timeDiff = (currentTime - lastTime)/1000; // seconds
     if (timeDiff > .15) {
-        if (tUnit == 28) tUnit = 1;
+        if (tUnit == 1) tUnit = 27;
         gl.viewport(vis.x, vis.y, vis.width, vis.height);
         drawTexture();
-        gl.viewport(unit.x, unit.y, unit.width, unit.height);
+        gl.viewport(dob.x, dob.y, dob.width, dob.height);
         drawUnit();
         lastTime = performance.now();
-        tUnit++;
+        tUnit--;
     }
     window.requestAnimationFrame(draw);
 }
@@ -158,46 +162,55 @@ function drawTexture() {
 }
 
 function drawCoord() {
-    context.clearRect(0, 0, coord.canvas.width, coord.canvas.height);
-    const space = 10;
-    const xOff = (coord.width - vis.width)/2; // top left corner of
-    const yOff = (coord.height - vis.height)/2; // the webgl frame
+    const space = vis.width*.01;
+    const xOff = (info.width - vis.width)/2; // top left corner of
+    const yOff = (info.height - vis.height)/2; // the webgl frame
     const lat = ["90N", "60N", "30N", "EQ", "30S", "60S", "90S"];
     const lon = ["0", "60E", "120E", "180", "120W", "60W","0"];
 
-    var index = 0;
     context.textAlign = "right";
-    for (var i = yOff; i <= yOff + vis.height; i += vis.height/6) {
-        const a = { x: xOff + 3 - space, y: i }
-        const b = { x: xOff + 5 - space, y: i }
-        const t = { x: xOff-space, y: i + 2 }
-        context.beginPath(); 
-        context.moveTo(a.x, a.y);
-        context.lineTo(b.x, b.y);
-        context.stroke();
-        context.fillText(lat[index], t.x, t.y);
-        index++;
+    var yCurr = yOff;
+    for (var i = 0; i < 7; i++) {
+        const t = { x: xOff-space, y: yCurr + 2 }
+        context.fillText(lat[i], t.x, t.y);
+        yCurr += vis.height/6;
     }
-    index = 0;
+
     context.textAlign = "center";
-    for (var i = xOff; i <= xOff + vis.width; i += vis.width/6) {
-        var a = { x: i, y: yOff + vis.height+3}
-        var b = { x: i, y: yOff + vis.height+5}
-        var t = { x: i, y: yOff + vis.height + space*1.5}
-        context.beginPath(); 
-        context.moveTo(a.x, a.y);
-        context.lineTo(b.x, b.y);
-        context.stroke();
-        context.fillText(lon[index], t.x, t.y);
-        index++;
+    var xCurr = xOff;
+    for (var i = 0; i < 7; i++) {
+        var t = { x: xCurr, y: yOff + vis.height + space*1.7}
+        context.fillText(lon[i], t.x, t.y);
+        xCurr+=vis.width/6;
     }
 }
 
+function drawDobson() {
+    const xOff = (info.width - vis.width)/2;
+    const yOff = (info.height - vis.height)/2 - (dob.height)*1.8;
+    const dobson = [170, 200, 230, 260, 290, 320, 350, 380, 410, 440, 470, 500];
+    context.textAlign = "center";
+    var xCurr = xOff;
+    for (var i = 0; i < 12; i++) {
+        const t = { x: xCurr, y: yOff };
+        context.fillText(dobson[i], t.x, t.y);
+        xCurr+=vis.width/dob.data.length;
+    }
+}
+
+function drawTitle() {
+    const xOff = info.width/2;
+    const yOff = (info.height - vis.height)/4.5;
+    context.font = Math.round(info.height * .03) + "px Courier New";
+    context.fillText("Ozone (DU) 9/25 - 9/31", xOff, yOff);
+    context.font = "10px Courier New";
+}
+
 function drawUnit() {
-    gl.useProgram(unit.program);
-    bindAttribute(vis.posBuffer, gl.getAttribLocation(unit.program, "a_position"), 2);
-    gl.uniform1fv(gl.getUniformLocation(unit.program, "u_hues"), unit.data);
-    gl.uniform2f(gl.getUniformLocation(unit.program, "u_resolution"), gl.canvas.width, gl.canvas.height);
+    gl.useProgram(dob.program);
+    bindAttribute(vis.posBuffer, gl.getAttribLocation(dob.program, "a_position"), 2);
+    gl.uniform1fv(gl.getUniformLocation(dob.program, "u_hues"), dob.data);
+    gl.uniform2f(gl.getUniformLocation(dob.program, "u_resolution"), gl.canvas.width, gl.canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -209,7 +222,7 @@ function loadJson(obj, url) {
     xhr.open('GET', url, true);
     xhr.onload = function() {
         obj.data = xhr.response.hues;
-        console.log(unit.data);
+        console.log(dob.data);
     };
     xhr.send(null);
 }
