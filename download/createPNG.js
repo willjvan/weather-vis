@@ -4,7 +4,7 @@ const fs = require('fs');
 var width = 1440;
 var height = 721;
 var times = ["t00", "t06", "t12", "t18"];
-var oznHues = [0, 20, 40, 60, 80, 100, 120, 140, 180, 200]
+var oznHues = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300]
 
 function arrayToObject(arr) {
     var result = {};
@@ -16,7 +16,6 @@ function arrayToObject(arr) {
 
 function hslToRgb(h, s, l){
     var r, g, b;
-
     if(s == 0){
         r = g = b = l; // achromatic
     }else{
@@ -57,11 +56,11 @@ function createOzn(fileName) {
             var ozoneIndex = y * width + ((width - 1 - x) + width / 2) % width; 
             var offset = ozonePNG.data.length - dataIndex
 
-            var min = ozone_data.minimum;
-            var max = ozone_data.maximum;
+            var min = 150;
+            var max = 500;
             var cur = ozone_values[ozoneIndex];
             var mappedHue = (cur - min)/(max - min); // values are between 0 and 1
-            var index = Math.round(mappedHue * 9);
+            var index = Math.round(mappedHue * 10);
             var rgb = hslToRgb(oznHues[index]/360, 1, .6);
 
             ozonePNG.data[offset + 0] = rgb[0];
@@ -74,19 +73,17 @@ function createOzn(fileName) {
     ozonePNG.pack().pipe(fs.createWriteStream("../demo/data/imageData/" + fileName + ".png"));
 }
 
-function createOznUnit(fileName) {
-    var ozonePNG = new PNG({
-        colorType:2,
-        filterType:4,
-        width: width,
-        height: 10,
+function writeOznJson(fileName) {
+    var data = {
+        hues: oznHues
+    }
+    var json = JSON.stringify(data);
+    fs.writeFile("../demo/data/jsonData/" + fileName + ".json", json, 'utf8', function(error){
+        if (error) {
+            throw error;
+        }
+        console.log("complete");
     });
-
-    //sectionWidth = 
-
-    // for (var i = 0; i < width; i+=width/oznHues.length) {
-    //     for 
-    // }
 }
 
 function createWindPNG(uFileName, vFileName, outFileName) {
@@ -163,10 +160,10 @@ function createWavePNG(fileName) {
 
 for (var i = 1; i < 9; i++) {
     for (const t of times) {
-        createWindPNG("u_wind_" + i + "_" + t, "v_wind_" + i + "_" + t, "wind_" + i + "_" + t);
+        //createWindPNG("u_wind_" + i + "_" + t, "v_wind_" + i + "_" + t, "wind_" + i + "_" + t);
         createOzn("ozone_" + i + "_" + t);
     }
 }
 
-createOznUnit("ozone_unit");
+writeOznJson("ozone_unit");
 

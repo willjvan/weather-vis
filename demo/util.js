@@ -40,7 +40,7 @@ function createProgram(vertSource, fragSource) {
     if (success) {
         return program;
     } 
-    console.error('ERROR linking program', gl.getProgramInfoLog);
+    console.error('ERROR linking program: ', gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
 }
 

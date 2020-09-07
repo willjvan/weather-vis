@@ -27,6 +27,7 @@ unit = {
     y: null,
     width: null,
     height: null,
+    data: [],
 }
 
 // all variables related to coordinate graphics
@@ -43,6 +44,7 @@ window.onload = function() {
     context.font = "10px Arial";
     gl = vis.canvas.getContext('webgl');
     lastTime = performance.now();
+    loadJson(unit, "./data/jsonData/ozone_unit.json");
     loadImages(init, window.requestAnimationFrame);
     format();
 }
@@ -194,8 +196,20 @@ function drawCoord() {
 function drawUnit() {
     gl.useProgram(unit.program);
     bindAttribute(vis.posBuffer, gl.getAttribLocation(unit.program, "a_position"), 2);
+    gl.uniform1fv(gl.getUniformLocation(unit.program, "u_hues"), unit.data);
     gl.uniform2f(gl.getUniformLocation(unit.program, "u_resolution"), gl.canvas.width, gl.canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+function loadJson(obj, url) {
+    const xhr = new XMLHttpRequest();
+    xhr.responseType = 'json';
+    xhr.open('GET', url, true);
+    xhr.onload = function() {
+        obj.data = xhr.response.hues;
+        console.log(unit.data);
+    };
+    xhr.send(null);
 }
