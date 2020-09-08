@@ -1,11 +1,11 @@
 var width = 360;
 var height = 181;
-var canvasPct = .75;
+const canvasPct = .75;
 var lastTime;
 var currentTime;
 var tUnit = 27;
 
-// variables related to weather visualization
+// weather vis 
 var vis = {
     canvas: document.getElementById('weatherVis'),
     program: null,
@@ -20,7 +20,7 @@ var vis = {
     height: null,
 }
 
-// variables related to dobson unit graphics 
+// dobson graphics
 var dob = {
     program: null,
     x: null,
@@ -30,32 +30,38 @@ var dob = {
     data: [],
 }
 
-// all variables related to coordinate graphics
+// text graphics
 var info = {
     canvas: document.getElementById('unitVis'),
-    context: null,
+    ctx: null,
     width: null,
     height: null,
 }
 
 window.onload = function() {
-    context = info.canvas.getContext('2d');
-    context.strokeStyle = "#303030";
-    context.font = "10px Courier New";
+    // get contexts
+    info.ctx = info.canvas.getContext('2d');
+    info.ctx.strokeStyle = "#303030";
+    info.ctx.font = "10px Courier New";
     gl = vis.canvas.getContext('webgl');
+
+    // get time for animation
     lastTime = performance.now();
+
+    // load json and images async
     loadJson(dob, "./data/jsonData/ozone_unit.json");
     loadImages(init, window.requestAnimationFrame);
+
+    // format graphics size
     format();
 }
 
 window.onresize = function() {
     format();
     gl.bindBuffer(gl.ARRAY_BUFFER, vis.posBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        0, 0, width, height, width, 0,
-        0, 0, width, height, 0, height,
-    ]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, 
+        new Float32Array([0, 0, width, height, width, 0, 0, 0, width, height, 0, height,]), 
+        gl.STATIC_DRAW);
 }
 
 async function loadImages(init, requestFrame) {
@@ -81,16 +87,21 @@ function format() {
     var scale = newWidth / width;
     var newHeight = height * scale;
 
+    // set webgl canvas size
     vis.canvas.width = width = newWidth;
     vis.canvas.height = height = newHeight;
+
+    // we are rendering the graphics smaller than the actual webgl canvas size
     vis.width = width * vis.pct;
     vis.height = height * vis.pct;
     vis.x = width*(1 - vis.pct)/2
     vis.y = height*(1 - vis.pct)/2;
 
+    // set canvas2d size 
     info.width = info.canvas.width = window.innerWidth;
     info.height = info.canvas.height = height + 100;
 
+    // set dobson graphics
     dob.width = vis.width;
     dob.height = (vis.height) * .025;
     dob.x = vis.x;
@@ -130,13 +141,20 @@ function initTextures() {
 }
 
 function draw() {
-    context.clearRect(0, 0, info.canvas.width, info.canvas.height);
-    context.font = Math.round(info.height * .02) + "px Courier New";
-    drawCoord();    
-    drawDobson();
-    drawTitle();
+    // clear background
+    info.ctx.clearRect(0, 0, info.canvas.width, info.canvas.height);
+    
+    // scale font 
+    info.ctx.font = Math.round(info.height * .02) + "px Courier New";
+
+    // draw text
+    drawText();
+
+    // get time for animatiion
     currentTime = performance.now();
     var timeDiff = (currentTime - lastTime)/1000; // seconds
+
+    // draw graphics
     if (timeDiff > .15) {
         if (tUnit == 1) tUnit = 27;
         gl.viewport(vis.x, vis.y, vis.width, vis.height);
@@ -146,7 +164,15 @@ function draw() {
         lastTime = performance.now();
         tUnit--;
     }
+    
+    // callback for animation
     window.requestAnimationFrame(draw);
+}
+
+function drawText() {
+    drawCoord();
+    drawDobson();
+    drawTitle();
 }
 
 function drawTexture() {
@@ -163,47 +189,49 @@ function drawTexture() {
 
 function drawCoord() {
     const space = vis.width*.01;
-    const xOff = (info.width - vis.width)/2; // top left corner of
-    const yOff = (info.height - vis.height)/2; // the webgl frame
+    const xOff = (info.width - vis.width)/2; 
+    const yOff = (info.height - vis.height)/2; 
     const lat = ["90N", "60N", "30N", "EQ", "30S", "60S", "90S"];
     const lon = ["0", "60E", "120E", "180", "120W", "60W","0"];
 
-    context.textAlign = "right";
+    info.ctx.textAlign = "right";
     var yCurr = yOff;
     for (var i = 0; i < 7; i++) {
         const t = { x: xOff-space, y: yCurr + 2 }
-        context.fillText(lat[i], t.x, t.y);
+        info.ctx.fillText(lat[i], t.x, t.y);
         yCurr += vis.height/6;
     }
 
-    context.textAlign = "center";
+    info.ctx.textAlign = "center";
     var xCurr = xOff;
     for (var i = 0; i < 7; i++) {
         var t = { x: xCurr, y: yOff + vis.height + space*1.7}
-        context.fillText(lon[i], t.x, t.y);
+        info.ctx.fillText(lon[i], t.x, t.y);
         xCurr+=vis.width/6;
     }
 }
 
 function drawDobson() {
     const xOff = (info.width - vis.width)/2;
-    const yOff = (info.height - vis.height)/2 - (dob.height)*1.8;
+    const yOff = (info.height - vis.height)/2 - (dob.height)*2.1;
     const dobson = [170, 200, 230, 260, 290, 320, 350, 380, 410, 440, 470, 500];
-    context.textAlign = "center";
+    info.ctx.textAlign = "center";
     var xCurr = xOff;
     for (var i = 0; i < 12; i++) {
         const t = { x: xCurr, y: yOff };
-        context.fillText(dobson[i], t.x, t.y);
+        info.ctx.fillText(dobson[i], t.x, t.y);
         xCurr+=vis.width/dob.data.length;
     }
 }
 
 function drawTitle() {
     const xOff = info.width/2;
-    const yOff = (info.height - vis.height)/4.5;
-    context.font = Math.round(info.height * .03) + "px Courier New";
-    context.fillText("Ozone (DU) 9/25 - 9/31", xOff, yOff);
-    context.font = "10px Courier New";
+    const yTitle = (info.height - vis.height)/6.6;
+    const yDate = (info.height - vis.height)/4;
+    info.ctx.font = Math.round(info.height * .03) + "px Courier New";
+    info.ctx.fillText("Ozone (DU)", xOff, yTitle);
+    info.ctx.font = Math.round(info.height * .02) + "px Courier New";
+    info.ctx.fillText("9/25 - 9/31", xOff, yDate);
 }
 
 function drawUnit() {
@@ -222,7 +250,6 @@ function loadJson(obj, url) {
     xhr.open('GET', url, true);
     xhr.onload = function() {
         obj.data = xhr.response.hues;
-        console.log(dob.data);
     };
     xhr.send(null);
 }
