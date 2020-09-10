@@ -1,5 +1,5 @@
 # weather-vis
-Accessing and animating weather data
+Accessing and visualizing weather data
 
 # What I learned
 - Access an API using curl
